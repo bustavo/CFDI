@@ -1,5 +1,5 @@
 # encoding: utf-8
-gem 'nokogiri', '1.5.11'
+gem 'nokogiri'
 
 require_relative 'version.rb'
 require_relative 'comun.rb'
