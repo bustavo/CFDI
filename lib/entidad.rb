@@ -21,7 +21,7 @@ module CFDI
       return [
         @rfc,
         @nombre,
-        *@domicilioFiscal.cadena_original,
+        @domicilioFiscal.cadena_original,
         expedido,
         @regimenFiscal
       ].flatten
@@ -51,8 +51,8 @@ module CFDI
     # @private
     def ns
       return ({
-        nombre: @nombre,
-        rfc: @rfc
+        :nombre => @nombre,
+        :rfc => @rfc
       })
     end
     
