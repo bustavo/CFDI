@@ -285,7 +285,7 @@ module CFDI
       
       doc = Nokogiri::XML(self.to_xml)
       spec = Gem::Specification.find_by_name("cfdi")
-      xslt = Nokogiri::XSLT(File.read(spec.gem_dir + "/lib/cadenaoriginal_3_3.xslt"))
+      xslt = Nokogiri::XSLT(File.read(spec.gem_dir + "/lib/cadenaoriginal_3_2.xslt"))
       
       return xslt.transform(doc)
       
