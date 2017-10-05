@@ -284,7 +284,7 @@ module CFDI
     def cadena_original
       
       doc = Nokogiri::XML(self.to_xml)
-      xslt = Nokogiri::XSLT(File.read("./lib/cadenaoriginal_3_2.xslt"))
+      xslt = Nokogiri::XSLT(File.read("/cadenaoriginal_3_2.xslt"))
       
       return xslt.transform(doc)
       
