@@ -2,62 +2,31 @@ module CFDI
   # La clase principal para crear Comprobantes
   class Comprobante
   
-    # los datos para la cadena original en el órden correcto
-    # @private
-    @@datosCadena = [:version, :fecha, :tipoDeComprobante, :formaDePago, :condicionesDePago, :subTotal, :descuento, :TipoCambio, :moneda, :total, :metodoDePago, :lugarExpedicion, :NumCtaPago]
-    # Todos los datos del comprobante
-    # @private
-    @@data = @@datosCadena+[:emisor, :receptor, :conceptos, :serie, :folio, :sello, :noCertificado, :certificado, :conceptos, :complemento, :cancelada, :impuestos]
+    @@datosCadena = [:Version, :Fecha, :TipoDeComprobante, :FormaPago, :CondicionesDePago, :SubTotal, :Descuento, :TipoCambio, :Moneda, :Total, :MetodoPago, :LugarExpedicion, :NoCertificado, :Certificado, :Serie, :Folio, :Confirmacion]
+    @@data = @@datosCadena+[:CfdiRelacionados, :Emisor, :Receptor, :Conceptos, :Impuestos, :Complemento, :Sello, :cancelada]
     attr_accessor *@@data
     
     @addenda = nil
   
     @@options = {
-      :tasa => 0.16,
       :defaults => {
-      :moneda => 'pesos',
-      :version => '3.2',
-      :subTotal => 0.0,
-      :TipoCambio => 1,
-      :conceptos => [],
-      :impuestos => [],
-      :tipoDeComprobante => 'ingreso'
+        :Moneda => 'MXN',
+        :Version => '3.3',
+        :SubTotal => 0.0,
+        :TipoCambio => 1,
+        :Conceptos => [],
+        :Impuestos => [],
+        :TipoDeComprobante => 'I',
+        :tasa => 0.16
       }
     }
   
-    # Configurar las opciones default de los comprobantes
-    # 
-    # == Parameters:
-    # options::
-    #  Las opciones del comprobante: tasa (de impuestos), defaults: un Hash con la moneda (pesos), version (3.2), TipoCambio (1), y tipoDeComprobante (ingreso)
-    #
-    # @return [Hash]
-    #
     def self.configure (options)
       @@options = Comprobante.rmerge @@options, options
       @@options
     end
   
-    # Crear un comprobante nuevo
-    #
-    # @param  data [Hash] Los datos de un comprobante
-    # @option data [String] :version ('3.2') La version del CFDI
-    # @option data [String] :fecha ('') La fecha del CFDI
-    # @option data [String] :tipoDeComprobante ('ingreso') El tipo de Comprobante
-    # @option data [String] :formaDePago ('') La forma de pago (pago en una sóla exhibición?)
-    # @option data [String] :condicionesDePago ('') Las condiciones de pago (Efectos fiscales al pago?)
-    # @option data [String] :TipoCambio (1) El tipo de cambio para la moneda de este CFDI'
-    # @option data [String] :moneda ('pesos') La moneda de pago
-    # @option data [String] :metodoDePago ('') El método de pago (depósito bancario? efectivo?)
-    # @option data [String] :lugarExpedicion ('') El lugar dónde se expide la factura (Nutopía, México?)
-    # @option data [String] :NumCtaPago (nil) El número de cuenta para el pago
-    # 
-    # @param  options [Hash] Las opciones para este comprobante
-    # @see [Comprobante@@options] Opciones
-    #
-    # @return {CFDI::Comprobante}
     def initialize (data={}, options={})
-      #hack porque dup se caga con instance variables
       opts = Marshal::load(Marshal.dump(@@options))
       data = opts[:defaults].merge data
       @opciones = opts.merge options
@@ -67,60 +36,34 @@ module CFDI
         self.send method, v
       end
     end
-  
-  
+    
     def addenda= addenda
       addenda = Addenda.new addenda unless addenda.is_a? Addenda
       @addenda = addenda
     end
   
-
-    # Regresa el subtotal de este comprobante, tomando el importe de cada concepto
-    # 
-    # @return [Float] El subtotal del comprobante
     def subTotal
       ret = 0
-      @conceptos.each do |c|
-        ret += c.importe
+      @Conceptos.each do |c|
+        ret += c.Importe
       end
       ret
     end
-  
-  
-    # Regresa el total
-    # 
-    # @return [Float] El subtotal multiplicado por la tasa
+
     def total
-      self.subTotal+(self.subTotal*@opciones[:tasa])
+      self.subTotal+(self.subTotal*0.16)
     end
-    
-        
-    # Asigna un emisor de tipo {CFDI::Entidad}
-    # @param  emisor [Hash, CFDI::Entidad] Los datos de un emisor
-    # 
-    # @return [CFDI::Entidad] Una entidad
+
     def emisor= emisor 
       emisor = Entidad.new emisor unless emisor.is_a? Entidad
-      @emisor = emisor;
+      @Emisor = emisor;
     end
-    
-    
-    # Asigna un receptor
-    # @param  receptor [Hash, CFDI::Entidad] Los datos de un receptor
-    # 
-    # @return [CFDI::Entidad] Una entidad
+
     def receptor= receptor 
       receptor = Entidad.new receptor unless receptor.is_a? Entidad
-      @receptor = receptor;
-      receptor
+      @Receptor = receptor;
     end
-    
-    # Agrega uno o varios conceptos
-    # @param  conceptos [Array, Hash, CFDI::Concepto] Uno o varios conceptos
-    # 
-    # En caso de darle un Hash o un {CFDI::Concepto}, agrega este a los conceptos, de otro modo, sobreescribe los conceptos pre-existentes
-    # 
-    # @return [Array] Los conceptos de este comprobante
+
     def conceptos= conceptos
       if conceptos.is_a? Array
         conceptos.map! do |concepto|
@@ -136,102 +79,80 @@ module CFDI
       conceptos
     end
     
-
-    # Asigna un complemento al comprobante
-    # @param  complemento [Hash, CFDI::Complemento] El complemento a agregar
-    # 
-    # @return [CFDI::Complemento]
     def complemento= complemento
       complemento = Complemento.new complemento unless complemento.is_a? Complemento
       @complemento = complemento
       complemento
     end
-  
 
-    # Asigna una fecha al comprobante
-    # @param  fecha [Time, String] La fecha y hora (YYYY-MM-DDTHH:mm:SS) de la emisión
-    # 
-    # @return [String] la fecha en formato '%FT%R:%S'
     def fecha= fecha
       fecha = fecha.strftime('%FT%R:%S') unless fecha.is_a? String
       @fecha = fecha
     end
 
-
-    # El comprobante como XML
-    # 
-    # @return [String] El comprobante namespaceado en versión 3.2 (porque soy un huevón)
     def to_xml
       ns = {
         'xmlns:cfdi' => "http://www.sat.gob.mx/cfd/3",
         'xmlns:xsi' => "http://www.w3.org/2001/XMLSchema-instance",
-        'xsi:schemaLocation' => "http://www.sat.gob.mx/cfd/3 http://www.sat.gob.mx/sitio_internet/cfd/3/cfdv32.xsd",
+        'xsi:schemaLocation' => "http://www.sat.gob.mx/cfd/3 http://www.sat.gob.mx/sitio_internet/cfd/3/cfdv33.xsd",
       }
 
-      ns[:version] = @version
-      ns[:fecha] = @fecha
-      ns[:tipoDeComprobante] =  @tipoDeComprobante
-      ns[:formaDePago] = @formaDePago
-      ns[:condicionesDePago] = @condicionesDePago
-      ns[:subTotal] = self.subTotal
-      ns[:descuento] = @descuento if @descuento
+      ns[:Version] = @Version
+      ns[:Fecha] = @Fecha
+      ns[:TipoDeComprobante] =  @TipoDeComprobante
+      ns[:FormaPago] = @FormaPago
+      ns[:CondicionesDePago] = @CondicionesDePago
+      ns[:SubTotal] = self.subTotal
+      ns[:Descuento] = @Descuento if @Descuento
       ns[:TipoCambio] = @TipoCambio if @TipoCambio
-      ns[:Moneda] = @moneda
-      ns[:total] = self.total
-      ns[:metodoDePago] = @metodoDePago
-      ns[:LugarExpedicion] = @lugarExpedicion
-      ns[:NumCtaPago] = @NumCtaPago if @NumCtaPago && @NumCtaPago!=''
-      ns[:folio] = @folio
-      ns[:serie] = @serie if @serie
-      ns[:sello] = @sello if @sello
-      ns[:noCertificado] = @noCertificado if @noCertificado
-      ns[:certificado] = @certificado if @noCertificado
-      
-
-    
+      ns[:Moneda] = @Moneda
+      ns[:Total] = self.total
+      ns[:MetodoPago] = @MetodoPago
+      ns[:NoCertificado] = @NoCertificado if @NoCertificado
+      ns[:Certificado] = @Certificado if @Certificado
+      ns[:Serie] = @Serie if @Serie
+      ns[:Folio] = @Folio
+      ns[:Confirmacion] = @Confirmacion if @Confirmacion
+      ns[:Sello] = @Sello if @Sello
+      ns[:LugarExpedicion] = @LugarExpedicion if @LugarExpedicion
+          
       if (@addenda)
-        # Si tenemos addenda, entonces creamos el campo "xmlns:ElNombre" y agregamos sus definiciones al SchemaLocation
-        ns["xmlns:#{@addenda.nombre}"] = @addenda.namespace
+        ns["xmlns:#{@addenda.Nombre}"] = @addenda.namespace
         ns['xsi:schemaLocation'] += ' '+[@addenda.namespace, @addenda.xsd].join(' ')
       end
+
+      @@data = @@datosCadena+[:CfdiRelacionados, :Emisor, :Receptor, :Conceptos, :Impuestos, :Complemento, :Sello, :cancelada]
+
             
       @builder = Nokogiri::XML::Builder.new(:encoding => 'UTF-8') do |xml|
         xml.Comprobante(ns) do
           ins = xml.doc.root.add_namespace_definition('cfdi', 'http://www.sat.gob.mx/cfd/3')
           xml.doc.root.namespace = ins
                   
-          xml.Emisor(@emisor.ns)  {
-            xml.DomicilioFiscal(@emisor.domicilioFiscal.to_h.reject {|k,v| v == nil})
-            xml.ExpedidoEn(@emisor.expedidoEn.to_h.reject {|k,v| v == nil || v == ''})
-            xml.RegimenFiscal({:Regimen => @emisor.regimenFiscal})
+          xml.Emisor(@Emisor.em)  {
           }
-          xml.Receptor(@receptor.ns) {
-            xml.Domicilio(@receptor.domicilioFiscal.to_h.reject {|k,v| v == nil || v == ''})
+          xml.Receptor(@Receptor.re) {
           }
           xml.Conceptos {
-            @conceptos.each do |concepto|
-              #p concepto.to_h.select {|k,v| v != nil && v != ''}
-              # select porque luego se caga el xml si incluyo noIdentificacion y es empty
+            @Conceptos.each do |concepto|
               xml.Concepto(              
-              :cantidad => concepto.cantidad, 
-              :unidad => concepto.unidad, 
-              :noIdentificacion => concepto.noIdentificacion,
-              :descripcion => concepto.descripcion, 
-              :valorUnitario => concepto.valorUnitario, 
-              :importe => concepto.importe) {
-                xml.ComplementoConcepto
-              }
+              :ClaveProdServ => concepto.ClaveProdSer, 
+              :NoIdentificacion => concepto.NoIdentificacion,
+              :Cantidad => concepto.Cantidad, 
+              :ClaveUnidad => concepto.ClaveUnidad, 
+              :Descripcion => concepto.Descripcion, 
+              :ValorUnitario => concepto.ValorUnitario, 
+              :Importe => concepto.Importe)
             end
           }
-          xml.Impuestos({:totalImpuestosTrasladados => self.subTotal*@opciones[:tasa]}) {
+          xml.Impuestos({:TotalImpuestosTrasladados => self.subTotal*0.16}) {
             xml.Traslados {
-              @impuestos.each do |impuesto|
-                 xml.Traslado({:impuesto => impuesto[:impuesto], :tasa => (@opciones[:tasa]*100).to_i, :importe => self.subTotal*@opciones[:tasa]})
+              @Impuestos.each do |impuesto|
+                 xml.Traslado({:Impuesto => impuesto[:Impuesto], :TipoFactor => impuesto[:TipoFactor], :TasaOCuota => impuesto[:TasaOCuota], :Importe => (self.subTotal*impuesto[:TasaOCuota].to_f).round(2)})
               end
             }
           }
           xml.Complemento {
-            
             if @complemento
               nsTFD = {
                 'xsi:schemaLocation' => 'http://www.sat.gob.mx/TimbreFiscalDigital http://www.sat.gob.mx/TimbreFiscalDigital/TimbreFiscalDigital.xsd',
@@ -240,7 +161,6 @@ module CFDI
               }
               xml['tfd'].TimbreFiscalDigital(@complemento.to_h.merge nsTFD) {
               }
-              
             end
           }
           
@@ -248,11 +168,11 @@ module CFDI
             xml.Addenda {
               @addenda.data.each do |k,v|
                 if v.is_a? Hash
-                  xml[@addenda.nombre].send(k, v)
+                  xml[@addenda.Nombre].send(k, v)
                 elsif v.is_a? Array
-                  xml[@addenda.nombre].send(k, v)
+                  xml[@addenda.Nombre].send(k, v)
                 else
-                  xml[@addenda.nombre].send(k, v)
+                  xml[@addenda.Nombre].send(k, v)
                 end
               end
             }
@@ -263,10 +183,6 @@ module CFDI
       @builder.to_xml
     end
 
-
-    # Un hash con todos los datos del comprobante, listo para Hash.to_json
-    # 
-    # @return [Hash] El comprobante como Hash
     def to_h
       hash = {}
       @@data.each do |key|
@@ -277,21 +193,14 @@ module CFDI
       return hash
     end
   
-
-    # La cadena original del CFDI
-    # 
-    # @return [String] Separada por pipes, because fuck you that's why
     def cadena_original
-      
       doc = Nokogiri::XML(self.to_xml)
       spec = Gem::Specification.find_by_name("cfdi")
-      xslt = Nokogiri::XSLT(File.read(spec.gem_dir + "/lib/cadenaoriginal_3_2.xslt"))
+      xslt = Nokogiri::XSLT(File.read(spec.gem_dir + "/lib/cadenaoriginal_3_3.xslt"))
       
       return xslt.transform(doc)
-      
     end
   
-    # @private
     def self.rmerge defaults, other_hash
       result = defaults.merge(other_hash) do |key, oldval, newval|
         oldval = oldval.to_hash if oldval.respond_to?(:to_hash)
@@ -302,6 +211,7 @@ module CFDI
     end
 
     private
+
     def deep_to_h value
       
       if value.is_a? ElementoComprobante
@@ -316,16 +226,10 @@ module CFDI
           deep_to_h v
         end
       end
-      value
-      
-      #value = value.to_h if value.respond_to? :to_h
-      #if value.each do |vi|
-      #  value.map do |k,v|
-      #    v = deep_to_h v
-      #  end
-      #end
+
       value
     end
   
   end
+
 end

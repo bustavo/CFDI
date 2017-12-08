@@ -1,15 +1,13 @@
 module CFDI
   class Impuestos < ElementoComprobante
+    @cadenaOriginal = [:TotalImpuestosTrasladados, :totalImpuestosRetenidos, :traslados, :retenciones]
 
-    # @private
-    @cadenaOriginal = [:totalImpuestosTrasladados, :totalImpuestosRetenidos, :traslados, :retenciones]
-    # @private
     attr_accessor(*@cadenaOriginal)
 
     def initialize data={}
       self.traslados = data[:traslados] || []
       self.retenciones = data[:retenciones] || []
-      self.totalImpuestosTrasladados = data[:totalImpuestosTrasladados] if data[:totalImpuestosTrasladados]
+      self.TotalImpuestosTrasladados = data[:TotalImpuestosTrasladados] if data[:TotalImpuestosTrasladados]
       self.totalImpuestosRetenidos = data[:totalImpuestosRetenidos] if data[:totalImpuestosRetenidos]
     end
 
@@ -21,7 +19,7 @@ module CFDI
           importe: t[:importe]
         })
       }
-      @totalImpuestosTrasladados = suma(:traslados) if @traslados.count > 0
+      @TotalImpuestosTrasladados = suma(:traslados) if @traslados.count > 0
     end
 
     def retenciones= value
@@ -35,20 +33,14 @@ module CFDI
       @totalImpuestosRetenidos = suma(:retenciones) if @retenciones.count > 0
     end
 
-
-    # Asigna el total de impuestos trasladados
-    # @param  valor [String, Float, #to_f] Cualquier objeto que responda a #to_f
-    def totalImpuestosTrasladados= valor
-      @totalImpuestosTrasladados = valor.to_f
+    def TotalImpuestosTrasladados= valor
+      @TotalImpuestosTrasladados = valor.to_f
     end
 
-    # Asigna el total de impuestos retenidos
-    # @param  valor [String, Float, #to_f] Cualquier objeto que responda a #to_f
     def totalImpuestosRetenidos= valor
       @totalImpuestosRetenidos = valor.to_f
     end
 
-    # @return [Integer] La cantidad de impuestos que tiene.
     def count
       traslados.count + retenciones.count
     end
@@ -57,11 +49,9 @@ module CFDI
       instance_variable_get("@#{tipo_impuestos}").map(&:importe).reduce(0.0, &:+)
     end
 
-    # @return [Float] la suma de traslados menos retenciones
     def total
       suma(:traslados) - suma(:retenciones)
     end
-
 
     class ImpuestoGenerico < ElementoComprobante
       # @private
@@ -83,7 +73,6 @@ module CFDI
 
     end
 
-
     class Traslado < ImpuestoGenerico
       # @private
       @cadenaOriginal = [:impuesto, :tasa, :importe]
@@ -102,7 +91,6 @@ module CFDI
       #   @importe = valor.to_f
       # end
     end
-
 
     class Retencion < ImpuestoGenerico
       # @private
