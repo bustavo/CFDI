@@ -29,7 +29,7 @@ module CFDI
     end
   
     def certificado
-      self.serial.to_s(16).scan(/.{2}/).map{|x| x[1]}.join
+      @data
     end
   
     def issuername
